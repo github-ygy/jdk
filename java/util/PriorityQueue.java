@@ -84,6 +84,7 @@ public class PriorityQueue<E> extends AbstractQueue<E>
 
     private static final long serialVersionUID = -7720805057305804111L;
 
+    //默认初始化大小
     private static final int DEFAULT_INITIAL_CAPACITY = 11;
 
     /**
@@ -94,23 +95,27 @@ public class PriorityQueue<E> extends AbstractQueue<E>
      * heap and each descendant d of n, n <= d.  The element with the
      * lowest value is in queue[0], assuming the queue is nonempty.
      */
+    //队列内置为数组，实际为数据结构中的二叉堆
     transient Object[] queue; // non-private to simplify nested class access
 
     /**
      * The number of elements in the priority queue.
      */
+    //容量大小
     private int size = 0;
 
     /**
      * The comparator, or null if priority queue uses elements'
      * natural ordering.
      */
+    //比较器
     private final Comparator<? super E> comparator;
 
     /**
      * The number of times this priority queue has been
      * <i>structurally modified</i>.  See AbstractList for gory details.
      */
+    //操作数
     transient int modCount = 0; // non-private to simplify nested class access
 
     /**
@@ -159,6 +164,7 @@ public class PriorityQueue<E> extends AbstractQueue<E>
      * @throws IllegalArgumentException if {@code initialCapacity} is
      *         less than 1
      */
+    //构造方法，传入初始化容量与比较器。
     public PriorityQueue(int initialCapacity,
                          Comparator<? super E> comparator) {
         // Note: This restriction of at least one is not actually needed,
@@ -166,7 +172,7 @@ public class PriorityQueue<E> extends AbstractQueue<E>
         if (initialCapacity < 1)
             throw new IllegalArgumentException();
         this.queue = new Object[initialCapacity];
-        this.comparator = comparator;
+        this.comparator = comparator;  //比较器
     }
 
     /**
@@ -335,9 +341,11 @@ public class PriorityQueue<E> extends AbstractQueue<E>
             throw new NullPointerException();
         modCount++;
         int i = size;
+        //保证容量足够，数组为定长
         if (i >= queue.length)
             grow(i + 1);
         size = i + 1;
+        //如果只有一个元素则为头部，否则需要上滤
         if (i == 0)
             queue[0] = e;
         else
@@ -618,7 +626,10 @@ public class PriorityQueue<E> extends AbstractQueue<E>
         else {
             E moved = (E) queue[s];
             queue[s] = null;
+            //首先下滤，将尾部元素取出重新排位
             siftDown(i, moved);
+            //如果尾部元素取代 i 位置元素，则需要上滤判断
+            //可能尾部元素比父元素要小
             if (queue[i] == moved) {
                 siftUp(i, moved);
                 if (queue[i] != moved)
@@ -662,10 +673,12 @@ public class PriorityQueue<E> extends AbstractQueue<E>
     }
 
     @SuppressWarnings("unchecked")
+    //上滤
     private void siftUpUsingComparator(int k, E x) {
         while (k > 0) {
-            int parent = (k - 1) >>> 1;
+            int parent = (k - 1) >>> 1;  //父节点
             Object e = queue[parent];
+            //与父节点判断大小，需要满足父节点大于所有子节点
             if (comparator.compare(x, (E) e) >= 0)
                 break;
             queue[k] = e;
@@ -709,20 +722,29 @@ public class PriorityQueue<E> extends AbstractQueue<E>
     }
 
     @SuppressWarnings("unchecked")
+    //下滤指定位置的节点
+    //k为数组数组索引，对应二叉堆为 k+1个节点位置
+    //左节点 （2k+1） 右节点 （2k + 2）
     private void siftDownUsingComparator(int k, E x) {
         int half = size >>> 1;
+        //如果是初始化一个非sorted结合则需要循环下滤
+        //下滤，只用从非叶子节点开始下滤即可，即size/2
         while (k < half) {
-            int child = (k << 1) + 1;
+            int child = (k << 1) + 1;   //左节点
             Object c = queue[child];
-            int right = child + 1;
+            int right = child + 1;   //右节点
             if (right < size &&
                 comparator.compare((E) c, (E) queue[right]) > 0)
+                //如果左节点大于右节点，取右节点
                 c = queue[child = right];
+            //将右节点与父节点数据比较，如果父节点大于子节点则下滤，否则不变
             if (comparator.compare(x, (E) c) <= 0)
                 break;
+            //将x下滤，将c赋值到父节点位置
             queue[k] = c;
             k = child;
         }
+        //最后的k位置，即为x的索引坐标
         queue[k] = x;
     }
 
@@ -732,6 +754,7 @@ public class PriorityQueue<E> extends AbstractQueue<E>
      */
     @SuppressWarnings("unchecked")
     private void heapify() {
+        //下滤操作，将每个父节点看成重新插入的元素下滤，达到二叉堆结构要求
         for (int i = (size >>> 1) - 1; i >= 0; i--)
             siftDown(i, (E) queue[i]);
     }
