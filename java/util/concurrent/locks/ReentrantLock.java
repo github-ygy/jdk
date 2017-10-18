@@ -128,18 +128,19 @@ public class ReentrantLock implements Lock, java.io.Serializable {
          */
         final boolean nonfairTryAcquire(int acquires) {
             final Thread current = Thread.currentThread();
-            int c = getState();
+            int c = getState();  //获取状态
             if (c == 0) {
+                //如果是0，则尝试cas操作加锁，无须进入队列排队，可能被其它线程抢占
                 if (compareAndSetState(0, acquires)) {
                     setExclusiveOwnerThread(current);
                     return true;
                 }
             }
-            else if (current == getExclusiveOwnerThread()) {
-                int nextc = c + acquires;
+            else if (current == getExclusiveOwnerThread()) {   //如果已经被抢占，判断是否为当前线程抢占
+                int nextc = c + acquires;    //增加抢占锁的次数  （可重入）
                 if (nextc < 0) // overflow
                     throw new Error("Maximum lock count exceeded");
-                setState(nextc);
+                setState(nextc);    //设置状态
                 return true;
             }
             return false;
@@ -203,10 +204,10 @@ public class ReentrantLock implements Lock, java.io.Serializable {
          * acquire on failure.
          */
         final void lock() {
-            if (compareAndSetState(0, 1))
-                setExclusiveOwnerThread(Thread.currentThread());
+            if (compareAndSetState(0, 1))   //尝试cas操作，抢占锁
+                setExclusiveOwnerThread(Thread.currentThread());   //标记独占锁为被当前线程
             else
-                acquire(1);
+                acquire(1);     //尝试获取锁(AQS方法)
         }
 
         protected final boolean tryAcquire(int acquires) {
@@ -232,7 +233,7 @@ public class ReentrantLock implements Lock, java.io.Serializable {
             final Thread current = Thread.currentThread();
             int c = getState();
             if (c == 0) {
-                if (!hasQueuedPredecessors() &&
+                if (!hasQueuedPredecessors() &&  //如果队列中没有其他线程，说明没有线程正在占有锁！
                     compareAndSetState(0, acquires)) {
                     setExclusiveOwnerThread(current);
                     return true;
