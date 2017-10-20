@@ -147,15 +147,15 @@ public class ReentrantLock implements Lock, java.io.Serializable {
         }
 
         protected final boolean tryRelease(int releases) {
-            int c = getState() - releases;
+            int c = getState() - releases;  //获取当前线程状态值
             if (Thread.currentThread() != getExclusiveOwnerThread())
                 throw new IllegalMonitorStateException();
             boolean free = false;
-            if (c == 0) {
+            if (c == 0) {   //如果线程状态为0，则表示已经释放了锁
                 free = true;
                 setExclusiveOwnerThread(null);
             }
-            setState(c);
+            setState(c);   //设置状态
             return free;
         }
 
@@ -294,7 +294,7 @@ public class ReentrantLock implements Lock, java.io.Serializable {
      * immediately, setting the lock hold count to one.
      *
      * <p>If the current thread already holds this lock then the hold count
-     * is incremented by one and the method returns immediately.
+     * is incremented by one and the method returns immediately.]
      *
      * <p>If the lock is held by another thread then the
      * current thread becomes disabled for thread scheduling
