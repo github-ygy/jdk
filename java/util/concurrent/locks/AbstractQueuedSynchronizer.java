@@ -609,12 +609,12 @@ public abstract class AbstractQueuedSynchronizer
         Node pred = tail;
         if (pred != null) {   //如果pred 不为null 则非初始化状态 尝试cas操作，失败则enq进行循环cas操作
             node.prev = pred;
-            if (compareAndSetTail(pred, node)) {
+            if (compareAndSetTail(pred, node)) {  //尝试入队列
                 pred.next = node;
                 return node;
             }
         }
-        enq(node);
+        enq(node);  //循环cas入sync队列
         return node;
     }
 
@@ -878,7 +878,7 @@ public abstract class AbstractQueuedSynchronizer
             }
         } finally {
             if (failed)
-                cancelAcquire(node);
+                cancelAcquire(node);  //如果失败则取消获取资源
         }
     }
 
@@ -1269,7 +1269,7 @@ public abstract class AbstractQueuedSynchronizer
         if (tryRelease(arg)) {  //尝试释放锁成功（可能重入了多次锁）
             Node h = head;
             //如果没有队列外的线程获取锁，那么获取锁资源的一定是队列头，此处需要唤醒其它线程
-            //从队尾开始唤醒，因为队尾可能一直会新加入线程
+            //从队尾开始唤醒，因为队尾可能一直会新加入线程，双端队列容易死循环
             if (h != null && h.waitStatus != 0)
                 unparkSuccessor(h);
             return true;
