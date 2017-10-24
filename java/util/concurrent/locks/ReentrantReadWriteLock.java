@@ -391,21 +391,22 @@ public class ReentrantReadWriteLock
              */
             Thread current = Thread.currentThread();
             int c = getState();
-            int w = exclusiveCount(c);
+            int w = exclusiveCount(c);   //计算低16位值
             if (c != 0) {
                 // (Note: if c != 0 and w == 0 then shared count != 0)
-                if (w == 0 || current != getExclusiveOwnerThread())
+                if (w == 0 || current != getExclusiveOwnerThread())   //read 共享数量不为0
                     return false;
-                if (w + exclusiveCount(acquires) > MAX_COUNT)
+                if (w + exclusiveCount(acquires) > MAX_COUNT)  //最大为2的16次方-1 65535
                     throw new Error("Maximum lock count exceeded");
                 // Reentrant acquire
-                setState(c + acquires);
+                setState(c + acquires);  //设置状态 +1
                 return true;
             }
+            //c = 0 则表示没有写锁，尝试获取写锁
             if (writerShouldBlock() ||
                 !compareAndSetState(c, c + acquires))
                 return false;
-            setExclusiveOwnerThread(current);
+            setExclusiveOwnerThread(current);  //标明独占线程
             return true;
         }
 
