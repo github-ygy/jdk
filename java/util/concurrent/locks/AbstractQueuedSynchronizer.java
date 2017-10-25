@@ -684,17 +684,18 @@ public abstract class AbstractQueuedSynchronizer
          */
         for (;;) {
             Node h = head;
+            //最终状态 signal = 》0 = 》 PROPAGATE  经过一步0的操作时因为unparkSuccessor 中会有cas设置为0状态
             if (h != null && h != tail) {
-                int ws = h.waitStatus;
-                if (ws == Node.SIGNAL) {
-                    if (!compareAndSetWaitStatus(h, Node.SIGNAL, 0))
+                int ws = h.waitStatus;  //获取头节点的状态
+                if (ws == Node.SIGNAL) {  //如果节点的状态为唤醒，则置为0
+                    if (!compareAndSetWaitStatus(h, Node.SIGNAL, 0)) //失败则跳出循环重新开始
                         continue;            // loop to recheck cases
-                    unparkSuccessor(h);
-                }
-                else if (ws == 0 &&
-                         !compareAndSetWaitStatus(h, 0, Node.PROPAGATE))
+                    unparkSuccessor(h);   //唤醒下一个节点
+                } else if (ws == 0 &&
+                         !compareAndSetWaitStatus(h, 0, Node.PROPAGATE))  //将节点设置为可传播
                     continue;                // loop on failed CAS
             }
+            //如果头节点被更换，即下一个节点被唤醒
             if (h == head)                   // loop if head changed
                 break;
         }
@@ -730,7 +731,7 @@ public abstract class AbstractQueuedSynchronizer
         if (propagate > 0 || h == null || h.waitStatus < 0 ||
             (h = head) == null || h.waitStatus < 0) {
             Node s = node.next;
-            if (s == null || s.isShared())
+            if (s == null || s.isShared())  //如果下一个节点也是共享锁，则唤醒下一个节点
                 doReleaseShared();
         }
     }
@@ -952,18 +953,18 @@ public abstract class AbstractQueuedSynchronizer
      * @param arg the acquire argument
      */
     private void doAcquireShared(int arg) {
-        final Node node = addWaiter(Node.SHARED);
+        final Node node = addWaiter(Node.SHARED);  //将share节点入队列
         boolean failed = true;
         try {
             boolean interrupted = false;
             for (;;) {
                 final Node p = node.predecessor();
-                if (p == head) {
-                    int r = tryAcquireShared(arg);
-                    if (r >= 0) {
-                        setHeadAndPropagate(node, r);
+                if (p == head) {  //队列中只有头节点能获取资源
+                    int r = tryAcquireShared(arg);  //尝试获取读锁资源
+                    if (r >= 0) {  //资源获取成功
+                        setHeadAndPropagate(node, r);  //设置为头节点，并尝试唤醒下一个共享节点
                         p.next = null; // help GC
-                        if (interrupted)
+                        if (interrupted)   //判断中断
                             selfInterrupt();
                         failed = false;
                         return;
@@ -1289,7 +1290,7 @@ public abstract class AbstractQueuedSynchronizer
      *        and can represent anything you like.
      */
     public final void acquireShared(int arg) {
-        if (tryAcquireShared(arg) < 0)
+        if (tryAcquireShared(arg) < 0)   //小于0 则表示获取资源失败
             doAcquireShared(arg);
     }
 
