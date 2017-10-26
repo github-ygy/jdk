@@ -367,14 +367,14 @@ public class ReentrantReadWriteLock
          */
 
         protected final boolean tryRelease(int releases) {
-            if (!isHeldExclusively())
+            if (!isHeldExclusively())  //判断是否为当前线程持有锁
                 throw new IllegalMonitorStateException();
-            int nextc = getState() - releases;
-            boolean free = exclusiveCount(nextc) == 0;
+            int nextc = getState() - releases;   //获取释放后的状态值
+            boolean free = exclusiveCount(nextc) == 0;   //如果状态值为0 则表示锁已经完全释放
             if (free)
                 setExclusiveOwnerThread(null);
             setState(nextc);
-            return free;
+            return free;   //释放return true  则唤醒一个节点操作
         }
 
         protected final boolean tryAcquire(int acquires) {
@@ -402,7 +402,7 @@ public class ReentrantReadWriteLock
                 setState(c + acquires);  //设置状态 +1
                 return true;
             }
-            //c = 0 则表示没有写锁，cas尝试获取写锁
+            //c = 0 则表示没有读锁与写锁，cas尝试获取写锁
             //writerShouldBlock : 公平锁判断是否为head的下一个继承者,如果有排队则直接返回
             if (writerShouldBlock() ||
                 !compareAndSetState(c, c + acquires))
@@ -413,7 +413,7 @@ public class ReentrantReadWriteLock
 
         protected final boolean tryReleaseShared(int unused) {
             Thread current = Thread.currentThread();
-            if (firstReader == current) {
+            if (firstReader == current) {  // 判断当前线程时否为第一个reader
                 // assert firstReaderHoldCount > 0;
                 if (firstReaderHoldCount == 1)
                     firstReader = null;
@@ -422,10 +422,10 @@ public class ReentrantReadWriteLock
             } else {
                 HoldCounter rh = cachedHoldCounter;
                 if (rh == null || rh.tid != getThreadId(current))
-                    rh = readHolds.get();
+                    rh = readHolds.get();   //获取当前线程的计数器
                 int count = rh.count;
                 if (count <= 1) {
-                    readHolds.remove();
+                    readHolds.remove();   //< 1 则释放当前计数器
                     if (count <= 0)
                         throw unmatchedUnlockException();
                 }
@@ -434,11 +434,11 @@ public class ReentrantReadWriteLock
             for (;;) {
                 int c = getState();
                 int nextc = c - SHARED_UNIT;
-                if (compareAndSetState(c, nextc))
+                if (compareAndSetState(c, nextc))   //循环cas 操作释放资源
                     // Releasing the read lock has no effect on readers,
                     // but it may allow waiting writers to proceed if
                     // both read and write locks are now free.
-                    return nextc == 0;
+                    return nextc == 0;  //读锁free
             }
         }
 

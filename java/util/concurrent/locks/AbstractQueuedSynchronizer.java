@@ -1349,8 +1349,8 @@ public abstract class AbstractQueuedSynchronizer
      * @return the value returned from {@link #tryReleaseShared}
      */
     public final boolean releaseShared(int arg) {
-        if (tryReleaseShared(arg)) {
-            doReleaseShared();
+        if (tryReleaseShared(arg)) {    //读锁全部free
+            doReleaseShared();   //唤醒park的线程
             return true;
         }
         return false;
