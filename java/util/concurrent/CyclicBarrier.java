@@ -207,30 +207,30 @@ public class CyclicBarrier {
                 throw new BrokenBarrierException();
 
             if (Thread.interrupted()) {
-                breakBarrier();
+                breakBarrier();   //唤醒条件等待队列，设置broken = true  重置资源数量
                 throw new InterruptedException();
             }
 
-            int index = --count;
+            int index = --count;    //如果为0，则开启栅栏
             if (index == 0) {  // tripped
                 boolean ranAction = false;
                 try {
                     final Runnable command = barrierCommand;
                     if (command != null)
-                        command.run();
+                        command.run();   //执行栅栏开启后的方法
                     ranAction = true;
-                    nextGeneration();
+                    nextGeneration();   //开启下一个栅栏循环
                     return 0;
                 } finally {
-                    if (!ranAction)
+                    if (!ranAction)   //如果失败重置
                         breakBarrier();
                 }
             }
-
+            //如果index ＞０　
             // loop until tripped, broken, interrupted, or timed out
             for (;;) {
                 try {
-                    if (!timed)
+                    if (!timed)  //如果没有时间限制则一直等待被唤醒
                         trip.await();
                     else if (nanos > 0L)
                         nanos = trip.awaitNanos(nanos);
@@ -249,10 +249,10 @@ public class CyclicBarrier {
                 if (g.broken)
                     throw new BrokenBarrierException();
 
-                if (g != generation)
+                if (g != generation)  //开启了下一个栅栏则return
                     return index;
 
-                if (timed && nanos <= 0L) {
+                if (timed && nanos <= 0L) {  //超过了时间限制，则抛出异常
                     breakBarrier();
                     throw new TimeoutException();
                 }

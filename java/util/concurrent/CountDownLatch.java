@@ -176,12 +176,12 @@ public class CountDownLatch {
         protected boolean tryReleaseShared(int releases) {
             // Decrement count; signal when transition to zero
             for (;;) {
-                int c = getState();
-                if (c == 0)
+                int c = getState();  //获取状态
+                if (c == 0)   //表示已达到条件
                     return false;
                 int nextc = c-1;
-                if (compareAndSetState(c, nextc))
-                    return nextc == 0;
+                if (compareAndSetState(c, nextc))  //循环cas操作释放资源
+                    return nextc == 0;   //如果为true 需要唤醒等待的await节点
             }
         }
     }
