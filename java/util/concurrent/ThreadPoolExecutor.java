@@ -379,11 +379,11 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
     private static final int CAPACITY   = (1 << COUNT_BITS) - 1;
 
     // runState is stored in the high-order bits
-    private static final int RUNNING    = -1 << COUNT_BITS;
-    private static final int SHUTDOWN   =  0 << COUNT_BITS;
-    private static final int STOP       =  1 << COUNT_BITS;
-    private static final int TIDYING    =  2 << COUNT_BITS;
-    private static final int TERMINATED =  3 << COUNT_BITS;
+    private static final int RUNNING    = -1 << COUNT_BITS;   //运行
+    private static final int SHUTDOWN   =  0 << COUNT_BITS;   //关闭
+    private static final int STOP       =  1 << COUNT_BITS;   //停止
+    private static final int TIDYING    =  2 << COUNT_BITS;   //清理
+    private static final int TERMINATED =  3 << COUNT_BITS;   //终止
 
     // Packing and unpacking ctl
     private static int runStateOf(int c)     { return c & ~CAPACITY; }
@@ -895,8 +895,11 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
         retry:
         for (;;) {
             int c = ctl.get();
-            int rs = runStateOf(c);
+            int rs = runStateOf(c);  //线程池状态
 
+
+            // 条件1：非RUNNING 状态
+            // 条件2：不满足（处于 SHUTDOWN 状态, 并且参数 firstTask == null 并且工作队列不为空）
             // Check if queue empty only if necessary.
             if (rs >= SHUTDOWN &&
                 ! (rs == SHUTDOWN &&
@@ -905,14 +908,17 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
                 return false;
 
             for (;;) {
-                int wc = workerCountOf(c);
+                int wc = workerCountOf(c);   //线程数量
+                // 线程数量超过了CAPACITY 容量
+                //core 为true时，超过了核心线程数量
+                //core为false时，超过了线程设置总量
                 if (wc >= CAPACITY ||
                     wc >= (core ? corePoolSize : maximumPoolSize))
                     return false;
-                if (compareAndIncrementWorkerCount(c))
+                if (compareAndIncrementWorkerCount(c))  //cas 线程数量+1
                     break retry;
-                c = ctl.get();  // Re-read ctl
-                if (runStateOf(c) != rs)
+                c = ctl.get();  // Re-read ctl 如果cas失败 获取线程池状态
+                if (runStateOf(c) != rs)   //获取线程状态，如果线程状态改变，跳出大循环，否则循环cas线程数量+1
                     continue retry;
                 // else CAS failed due to workerCount change; retry inner loop
             }
@@ -1307,12 +1313,12 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
             throw new IllegalArgumentException();
         if (workQueue == null || threadFactory == null || handler == null)
             throw new NullPointerException();
-        this.corePoolSize = corePoolSize;
-        this.maximumPoolSize = maximumPoolSize;
-        this.workQueue = workQueue;
-        this.keepAliveTime = unit.toNanos(keepAliveTime);
-        this.threadFactory = threadFactory;
-        this.handler = handler;
+        this.corePoolSize = corePoolSize;  //核心线程池线程存活数量大小
+        this.maximumPoolSize = maximumPoolSize;   //线程池最大容量
+        this.workQueue = workQueue;    //任务队列
+        this.keepAliveTime = unit.toNanos(keepAliveTime);   //空闲线程等待被销毁时间
+        this.threadFactory = threadFactory;    //线程工程
+        this.handler = handler;    //拒绝策略handler
     }
 
     /**
@@ -1352,21 +1358,26 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
          * thread.  If it fails, we know we are shut down or saturated
          * and so reject the task.
          */
-        int c = ctl.get();
-        if (workerCountOf(c) < corePoolSize) {
-            if (addWorker(command, true))
+        int c = ctl.get();   //获取线程池状态
+        if (workerCountOf(c) < corePoolSize) {   //工作线程数量数量少于核心线程容量
+            if (addWorker(command, true))  //re check 数量后，判断是否直接起线程运行
                 return;
-            c = ctl.get();
+            c = ctl.get();   //重新获取线程池状态
         }
+        //如果为 running状态 并且 入队列成功
         if (isRunning(c) && workQueue.offer(command)) {
-            int recheck = ctl.get();
-            if (! isRunning(recheck) && remove(command))
-                reject(command);
-            else if (workerCountOf(recheck) == 0)
+            int recheck = ctl.get();   //重新获取状态
+            if (! isRunning(recheck) && remove(command))  //如果非运行状态，并且移出队列成功
+                reject(command);  //拒绝策略
+            //1 非running状态 且移出任务失败
+            //2.running状态
+            else if (workerCountOf(recheck) == 0)  //线程数量为0
                 addWorker(null, false);
         }
+        //1 非running状态
+        //2.running状态，入队列失败并且启动新的线程失败
         else if (!addWorker(command, false))
-            reject(command);
+            reject(command);//失败，则拒绝
     }
 
     /**
