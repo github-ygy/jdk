@@ -915,7 +915,7 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
                 if (wc >= CAPACITY ||
                     wc >= (core ? corePoolSize : maximumPoolSize))
                     return false;
-                if (compareAndIncrementWorkerCount(c))  //cas 线程数量+1
+                if (compareAndIncrementWorkerCount(c))  //cas 任务数量+1
                     break retry;
                 c = ctl.get();  // Re-read ctl 如果cas失败 获取线程池状态
                 if (runStateOf(c) != rs)   //获取线程状态，如果线程状态改变，跳出大循环，否则循环cas线程数量+1
@@ -1371,11 +1371,11 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
                 reject(command);  //拒绝策略
             //1 非running状态 且移出任务失败
             //2.running状态
-            else if (workerCountOf(recheck) == 0)  //线程数量为0
+            else if (workerCountOf(recheck) == 0)  //任务数量为0
                 addWorker(null, false);
         }
-        //1 非running状态
-        //2.running状态，入队列失败并且启动新的线程失败
+        //1 非running状态，command 不为null，执行拒绝策略
+        //2.running状态，队列已满，如果尝试核心线程启动失败，则执行拒绝策略
         else if (!addWorker(command, false))
             reject(command);//失败，则拒绝
     }
